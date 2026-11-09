@@ -1,33 +1,76 @@
 const supabase = require('../config/supabase');
 const { success, created, error } = require('../core/response');
 
+
 // GET /api/quizzes
 async function listQuizzes(req, res) {
-    const { data, error: dbError } = await supabase
-        .from('quizzes')
-        .select('id,title,description,is_active,starts_at,ends_at')
-        .eq('is_active', true)
-        .order('created_at', { ascending: false });
+    try {
+        const { data, error: dbError } = await supabase
+            .from('quizzes')
+            .select(`
+                id,
+                title,
+                description,
+                quiz_type,
+                status,
+                starts_at,
+                ends_at,
+                created_at
+            `)
+            .eq('status', 'open')
+            .order('created_at', { ascending: false });
 
-    if (dbError) return error(res, 'Unable to load quizzes', 500);
+        if (dbError) {
+            console.error('List quizzes error:', dbError);
+            return error(res, 'Unable to load quizzes', 500);
+        }
 
-    return success(res, data, 'Quizzes loaded');
+        return success(res, data, 'Quizzes loaded');
+
+    } catch (err) {
+        console.error('List quizzes exception:', err);
+        return error(res, 'Internal server error', 500);
+    }
 }
+
+
 
 // GET /api/quizzes/:id
 async function getQuiz(req, res) {
-    const { data, error: dbError } = await supabase
-        .from('quizzes')
-        .select('id,title,description,is_active,starts_at,ends_at')
-        .eq('id', req.params.id)
-        .eq('is_active', true)
-        .maybeSingle();
+    try {
+        const { data, error: dbError } = await supabase
+            .from('quizzes')
+            .select(`
+                id,
+                title,
+                description,
+                quiz_type,
+                status,
+                starts_at,
+                ends_at,
+                created_at
+            `)
+            .eq('id', req.params.id)
+            .eq('status', 'open')
+            .maybeSingle();
 
-    if (dbError) return error(res, 'Database error', 500);
-    if (!data) return error(res, 'Quiz not found', 404);
+        if (dbError) {
+            console.error('Get quiz error:', dbError);
+            return error(res, 'Database error', 500);
+        }
 
-    return success(res, data, 'Quiz loaded');
+        if (!data) {
+            return error(res, 'Quiz not found', 404);
+        }
+
+        return success(res, data, 'Quiz loaded');
+
+    } catch (err) {
+        console.error('Get quiz exception:', err);
+        return error(res, 'Internal server error', 500);
+    }
 }
+
 
 // GET /api/quizzes/:id/questions
 async function getQuestions(req, res) {
